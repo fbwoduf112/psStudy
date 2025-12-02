@@ -4,117 +4,99 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 public class Main {
-	static int N, M;
-	static boolean [] check;
-	static ArrayList<Integer> [] party;
-	static ArrayList<Integer> person;
-	static int ans;
-	public static void main(String[] args) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		StringTokenizer st = new StringTokenizer(br.readLine(), " ");
-		N = Integer.parseInt(st.nextToken());
-		M = Integer.parseInt(st.nextToken());
-		party = new ArrayList[M];
-		for(int i=0; i<M; i++) {
-			party[i] = new ArrayList<>();
-		}
-		//진실 아는 사람 입력
-		st = new StringTokenizer(br.readLine(), " ");
-		person = new ArrayList<>();
-		
-		//진실을 알고 있는 사람과 같이 있으면 모르는 사람도 아는 사람.
-		int repeat;
-		repeat = Integer.parseInt(st.nextToken());
-		check = new boolean[N+1];
-		for(int i=0; i<repeat; i++) {
-			person.add(Integer.parseInt(st.nextToken()));
-		}
-		//같은 얘기 또 해도 됨.
-		for(int i=0; i<M; i++) {
-			st = new StringTokenizer(br.readLine(), " ");
-			repeat = Integer.parseInt(st.nextToken());
-			for(int j=0; j<repeat; j++) {
-				//배열에 추가
-				party[i].add(Integer.parseInt(st.nextToken()));
-			}
-		}
-		//진실을 아는 사람을 순서대로 q에 넣음.
-		/**
-		 * 예제 5기준
-		 * ex)	큐에 1들어감
-		 * 		첫번째 파티에서 5들어감.
-		 * 		1탐색 끝나면, 5탐색
-		 * 		5탐색 끝나면, 5를 진실을 아는 사람에 추가
-		 *		큐에 2들어감
-		 *		2번째 파티에서 6들어감.
-		 *		2끝나면, 6탐색
-		 *		6탐색 끝나면, 6을 진실을 아는 사람에 추가
-		 *		... 
-		 * 
-		 * **/
-		for(int i=0; i<person.size(); i++) {
-			bfs(person.get(i));
-		}
-		answer();
-	}
-	
-	public static void answer() {
-		//파티 순회 => 사람 순회
-		for(int i=0; i<M; i++) {
-			//파티 내부 사람이 진실을 앎?
-			for(int k=0; k<party[i].size(); k++) {
-				int temp = party[i].get(k);
-				int tempCnt = 0;
-				for(int j=0; j<person.size(); j++) {
-					if(temp == person.get(j)) {
-						tempCnt++;
-						break;
-					}
-				}
-				if(tempCnt == 0) {
-					ans++;
-					break;
-				}
-				else break;
-			}
-		}
-		System.out.print(ans);
-	}
-	
-	public static void bfs(int start) {
-		Queue<Integer> q = new LinkedList<>();
-		q.add(start);
-		
-		//들리지 않았으면 시작
-		//start 들리면 출발
-		if(!check[start]) {
-			//방문 처리
-			check[start] = true;
-			//큐가 빌때까지
-			while(!q.isEmpty()) {
-				//사람 뺌
-				int num = q.poll();
-				//파티 순회
-				for(int i=0; i<M; i++) {
-					//파티 내 사람 순회
-					int numCheck = 0; //진실을 아는 사람 있는지 체크
-					//해당 파티에서 진실을 아는 사람 있는지 체크
-					for(int j=0; j<party[i].size(); j++) {
-						int temp = party[i].get(j);
-						if(temp == num) numCheck++;
-					}
-					if(numCheck != 0) {
-						for(int j=0; j<party[i].size(); j++) {
-							//만약 해당 파티에 있는 사람중 검사하지 않았다?
-							if(!check[party[i].get(j)]) {
-								q.add(party[i].get(j));
-								check[party[i].get(j)] = true;
-								person.add(party[i].get(j));
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	static int n, m;
+    static int[] truth;
+    static int[] parent;
+    static List<List<Integer>> attendee;
+    static boolean[] knowTruth;
+    public static void main(String[] args) throws Exception{
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        StringTokenizer st = new StringTokenizer(br.readLine());
+        n = Integer.parseInt(st.nextToken());
+        m = Integer.parseInt(st.nextToken());
+
+        st = new StringTokenizer(br.readLine());
+        int len = Integer.parseInt(st.nextToken());
+        truth = new int[len];
+        for(int i=0; i<len; i++){
+            truth[i] = Integer.parseInt(st.nextToken());
+        }
+
+        attendee = new ArrayList<>();
+        for(int i=0; i<m; i++){
+            st = new StringTokenizer(br.readLine());
+            attendee.add(new ArrayList<>());
+            len = Integer.parseInt(st.nextToken());
+            for(int j=0; j<len; j++){
+                int id = Integer.parseInt(st.nextToken());
+                attendee.get(i).add(id); //파티에 참석하는 사람
+            }
+        }
+
+        knowTruth = new boolean[n+1];
+        parent = new int[n+1];
+        
+        //진실을 알고 있는 사람
+        for(int t:truth){
+            knowTruth[t] = true;
+        }
+
+        for(int i=0; i<=n; i++){
+            parent[i] = i;
+        }
+
+        //같이 파티에 있었던 사람 union
+        for(int i=0; i<m; i++){
+            for(int j=0; j<attendee.get(i).size()-1; j++){
+                union_node(attendee.get(i).get(j), attendee.get(i).get(j+1));
+            }
+        }
+
+        //진실을 아는 사람의 parent는 진실을 알게 됨
+        for(int i=1; i<=n; i++){
+            if(knowTruth[i]){
+                int parent = find_parent(i);
+                knowTruth[parent] = true;
+            }
+        }
+
+        int answer = 0;
+        //파티 참석자의 parent가 진실을 알고있다면 패스
+        for(int i=0; i<m; i++){
+            boolean flag = true;
+            for(int j=0; j<attendee.get(i).size(); j++){
+                int p = attendee.get(i).get(j);
+                int parent = find_parent(p);
+                if(knowTruth[parent]){
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag)
+                answer++;
+        }
+
+        System.out.println(answer);
+        
+    }
+
+    public static int find_parent(int u){
+        if(parent[u]==u) return u;
+        return parent[u] = find_parent(parent[u]);
+    }
+
+    public static void union_node(int u, int v){
+        u = find_parent(u);
+        v = find_parent(v);
+
+        if(u>v){
+            int temp = u;
+            u = v;
+            v = temp;
+        }
+
+        if(u==v) return;
+        else parent[v] = u;
+    }
+
 }
